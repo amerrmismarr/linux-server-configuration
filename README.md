@@ -3,13 +3,13 @@
 ### About the project
 > A baseline installation of a Linux distribution on a virtual machine and prepare it to host web applications, to include installing updates, securing it from a number of attack vectors and installing/configuring web and database servers
 
-* IP Address: []()
-* SSH Port: 
-* URL using DNS: []()
+* IP Address: 3.133.114.134
+* SSH Port: 2200
 
 
 ### Steps Followed to Configure the server
-If you speak Arabic, you should watch this video [Discuss Linux Server Configuration Project](https://youtu.be/v9VvJvTyuH0)
+
+
 #### 1. Update all packages
 ```
 sudo apt-get update
@@ -71,45 +71,11 @@ sudo ufw allow 8000/tcp  `serve another app on the server`
 sudo ufw enable
 ```
 
-#### 7. `Extra Step` Configure fail2ban to monitor unsuccessful login attempts
-```
-sudo apt-get install fail2ban sendmail
-sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
-sudo nano /etc/fail2ban/jail.local
-```
-Then Update the following:
-```
-destemail = [my email address]
-action = %(action_mwl)s
-
-[ssh]
-
-banaction = ufw-ssh
-port     = 2200
-```
-Create the ufw-ssh action referenced above:
-```
-sudo nano /etc/fail2ban/action.d/ufw-ssh.conf
-```
-Add the following:
-```
-[Definition]
-actionstart =
-actionstop =
-actioncheck =
-actionban = ufw insert 1 deny from <ip> to any app OpenSSH
-actionunban = ufw delete deny from <ip> to any app OpenSSH
-```
-Finally, restart fail2ban:
-```
-sudo service fail2ban restart
-```
 
 #### 8. Install Apache2 and mod-wsgi for python3 and Git
 ```
 sudo apt-get install apache2 libapache2-mod-wsgi-py3 git
 ```
-Note: For Python2 replace `libapache2-mod-wsgi-py3` with `libapache2-mod-wsgi`
 
 #### 9. Install and configure PostgreSQL
 ```
@@ -138,9 +104,8 @@ engine = create_engine('postgresql://catalog:password@localhost/catalog')
 cd /var/www/
 sudo mkdir catalog
 sudo chown grader:grader catalog
-git clone <your_repo_url> catalog
+git clone https://github.com/amerrmismarr/Entrepreneurs-project.git catalog
 cd catalog
-git checkout production # If you have a diffrent branch!
 nano catalog.wsgi
 ```
 Then add the following in `catalog.wsgi` file
@@ -158,7 +123,7 @@ with open(activate_this) as file_:
 
 sys.path.insert(0,"/var/www/catalog")
 
-from app import app as application
+from project import app as application
 ```
 Optional but recommended: Setup virtual environment and Install app dependencies 
 ```
@@ -166,24 +131,14 @@ sudo apt-get install python3-pip
 sudo -H pip3 install virtualenv
 virtualenv env
 source env/bin/activate
-pip3 install -r requirements.txt
 ```
-- If you don't have `requirements.txt` file, you can use
+
+Run the following:
+
 ```
 pip3 install flask packaging oauth2client redis passlib flask-httpauth
 pip3 install sqlalchemy flask-sqlalchemy psycopg2 bleach requests
 ```
-
-Edit Authorized JavaScript origins
-
-#### 11. `Extra Step` Clone the Neighborhood map app from GitHub
-```
-cd /var/www/
-sudo mkdir map
-sudo chown grader:grader map
-git clone https://github.com/AliMahmoud7/neighborhood-map-fsnd
-```
-Go to [<Instance_IP>:8000](<Instance_IP>:8000/) to view it
 
 #### 12. Configure apache server
 ```
@@ -193,9 +148,8 @@ Then add the following content:
 ```
 # serve catalog app
 <VirtualHost *:80>
-  ServerName <IP_Address or Domain>
-  ServerAlias <DNS>
-  ServerAdmin <Email>
+  ServerName 3.133.114.134
+  ServerAdmin amerrmismarr@gmail.com
   DocumentRoot /var/www/catalog
   WSGIDaemonProcess catalog user=grader group=grader
   WSGIScriptAlias / /var/www/catalog/catalog.wsgi
@@ -211,58 +165,6 @@ Then add the following content:
   CustomLog ${APACHE_LOG_DIR}/access.log combined
 </VirtualHost>
 
-# Serve another project on the server with different port (Extra Step)
-LISTEN 8000
-<VirtualHost *:8000>
-  ServerName <IP_Address or Domain>
-  ServerAlias <DNS>
-  ServerAdmin <Email>
-  DocumentRoot /var/www/map
-
- <Directory /var/www/map/.git>
-    Require all denied
-  </Directory>
-
-  ErrorLog ${APACHE_LOG_DIR}/error.log
-  LogLevel warn
-  CustomLog ${APACHE_LOG_DIR}/access.log combined
-</VirtualHost>
-```
-#### 13. `Extra Step` Configure `mod_wsgi` to work with python 3.6
-* Building python 3.6 from source
-```
-sudo apt install build-essential
-sudo apt install libssl-dev zlib1g-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev 
-sudo apt install libgdbm-dev libdb5.3-dev libbz2-dev libexpat1-dev liblzma-dev tk-dev
-
-wget https://www.python.org/ftp/python/3.6.2/Python-3.6.2.tar.xz
-tar xf Python-3.6.2.tar.xz
-cd Python-3.6.2
-./configure --enable-shared --enable-optimizations
-make
-sudo make altinstall
-sudo cp libpython3.6m.so.1.0 /usr/local/lib
-sudo cp libpython3.6m.so.1.0 /usr/lib
-ln -fs /usr/local/bin/python3.6 /usr/bin/python3.6
-sudo nano /etc/ld.so.conf.d/python36.conf
-```
-Then add the following text:
-```
-/usr/local/lib/python3.6
-/usr/local/lib
-```
-
-* Install the mod_wsgi 4.5.18 or latest version
-```
-wget "https://github.com/GrahamDumpleton/mod_wsgi/archive/4.5.18.tar.gz"
-tar xf 4.5.18.tar.gz
-cd mod_wsgi-4.5.18
-./configure --with-python=/usr/local/bin/python3.6
-make
-sudo make install
-```
-* **Note:** Make sure that your virtual environment using the same version of python used by `mod_wsgi`,
-When you create a new one with `virtualenv` tool use `-p` or `--python=` flag to specify the python interpreter path, In my case is `/usr/local/bin/python3.6` so use `virtualenv --python=/usr/local/bin/python3.6 env`
 
 #### 14. Reload & Restart Apache Server
 ```
@@ -279,8 +181,6 @@ sudo service apache2 restart
 * [Set Up Apache Virtual Hosts on Ubuntu ](https://www.digitalocean.com/community/tutorials/how-to-set-up-apache-virtual-hosts-on-ubuntu-14-04-lts)
 * [mod_wsgi documentation](https://modwsgi.readthedocs.io/en/develop/)
 * [Automatic Security Updates](https://help.ubuntu.com/community/AutomaticSecurityUpdates#Using_the_.22unattended-upgrades.22_package)
-* [Protect SSH with Fail2Ban](https://www.digitalocean.com/community/tutorials/how-to-protect-ssh-with-fail2ban-on-ubuntu-14-04)
-* [UFW with Fail2ban](https://askubuntu.com/questions/54771/potential-ufw-and-fail2ban-conflicts)
 * [Fix locale issue](https://askubuntu.com/questions/162391/how-do-i-fix-my-locale-issue)
 * [Ask Ubuntu](https://askubuntu.com/)
 * [Stack Overflow](https://stackoverflow.com/)
